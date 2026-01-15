@@ -1,14 +1,12 @@
-# DeepScan: Advanced Deepfake Detection Framework
+# Advanced Deepfake Detection Framework
 
 > **Dual-Stream Multi-Patch Ensemble Network (DSMPE-Net)**
 > A robust, explainable, and high-performance deepfake detection system designed for both image and video forensics.
 
-![Visual Explained](debug_patches.png)
-*(Above: The 9-patch grid used by the model to analyze local artifacts)*
 
 ## 🔍 Overview
 
-**DeepScan** uses a novel dual-stream architecture to detect manipulation artifacts in digital media. Unlike traditional methods that only look at visual anomalies, DeepScan analyzes the **Frequency Domain (DCT)** to catch generative artifacts invisible to the naked eye.
+This is a novel dual-stream architecture to detect manipulation artifacts in digital media. Unlike traditional methods that only look at visual anomalies, DeepScan analyzes the **Frequency Domain (DCT)** to catch generative artifacts invisible to the naked eye.
 
 ### Key Features
 *   **Dual-Stream Architecture**: Combines **Spatial (Xception)** and **Frequency (ResNet50+DCT)** streams.
@@ -45,7 +43,30 @@
 3.  **Download Weights**
     Place your trained model weights (e.g., `dsmpe_net_epoch_1.pth`) in the project root.
 
+
 ---
+
+## 📂 Datasets
+
+This framework is compatible with major deepfake forensics datasets.
+
+### 1. Celeb-DF v2 (Recommended)
+*   **Description**: High-quality deepfake videos featuring celebrities. Used for our primary **Video Inference** testing to ensure robustness against high-quality generations.
+*   **Why**: Overcomes the saturation issues of older datasets like FaceForensics++.
+*   **Structure**:
+    ```
+    Celeb-DF-v2/
+    ├── Celeb-real/
+    ├── Celeb-synthesis/
+    └── YouTube-real/
+    ```
+
+### 2. WildDeepfake (Training)
+*   **Description**: Diverse collection of real-world deepfakes found on the internet.
+*   **Why**: Used for training the core model to generalize against "in-the-wild" variations.
+
+---
+
 
 ## 🚀 Usage
 
@@ -101,5 +122,3 @@ This project is optimized for training on Kaggle/Colab due to dataset sizes.
 
 ---
 
-## 📄 License
-MIT License.
