@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+.venv
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# VS Code
+.vscode/
+
+# Project Specific - DATASETS (DO NOT COMMIT)
+dataset/
+videodata/
+
+# Project Specific - MODEL WEIGHTS (Refetch from Kaggle/Drive)
+*.pth
+checkpoints/
+
+# Project Specific - OUTPUTS & LOGS
+*.log
+debug_patches.png
+output/
+results/
+
+# OS Specific
+.DS_Store
+Thumbs.db
+
+uv.lock
+welfake_clean.csv
+WELFake_Dataset.csv
+create_kaggle_bundle.py
+
+archive1
+archive1/cc.en.300.bin
+
+train_safe.py
