@@ -88,17 +88,9 @@ Analyze a specific image frame.
 
 ```bash
 uv run python inference.py --image_path "path/to/image.jpg" --weight_path dsmpe_net_epoch_1.pth
+
 ```
 
-### 3. Training
-This project is optimized for training on Kaggle/Colab due to dataset sizes.
-*   See `kaggle_guide.md` for full training instructions.
-*   **Resume Training**:
-    ```bash
-    python train_image.py --resume_path dsmpe_net_epoch_1.pth
-    ```
-
----
 
 ## 🧠 Architecture Details
 
