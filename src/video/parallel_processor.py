@@ -44,9 +44,21 @@ def frame_producer(video_path, queue, selector_config):
                         is_dup = True
                 
                 if not is_dup:
-                    if not selector.is_blurry(frame):
+                    # 3. Face Detection (New)
+                    # If this returns None, it means no face found (and we should skip if strict).
+                    # But extract_face() handles the logic: returns frame if mtcnn is missing.
+                    # If mtcnn is present, returns None if no face.
+                    
+                    processed_frame = selector.extract_face(frame)
+                    
+                    if processed_frame is None:
+                        # Skip frame if face detection is active but no face found
+                        continue
+                        
+                    # 4. Blur Check (on the face crop)
+                    if not selector.is_blurry(processed_frame):
                         # Pre-preprocess: Model expects 1024x1024 RGB
-                        img = cv2.resize(frame, (1024, 1024))
+                        img = cv2.resize(processed_frame, (1024, 1024))
                         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                         img = img.astype(np.float32) / 255.0
                         queue.put(img)
@@ -148,17 +160,24 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=4)
     parser.add_argument('--blur_thresh', type=float, default=5.0, help='Blur threshold (lower = more sensitive)')
     parser.add_argument('--visualize', action='store_true', help='Save the patches seen by the model to debug_patches.png')
+    parser.add_argument('--no_face', action='store_true', help='Disable Face Detection (Use full frame)')
     args = parser.parse_args()
     
     if args.visualize:
         print("\n[INFO] Visualization Mode Enabled: Saving patch view to 'debug_patches.png'")
-        processor = ParallelProcessor(args.model)
-        # We need to manually trigger the generator for visualization on the first batch
-        # This is a bit of a hack to hook into the running process, but for CLI tool it's fine.
-        # Ideally, we'd pass this flag to run_inference.
         
+    # Configure Selector
+    sel_config = {
+        'blur_threshold': args.blur_thresh,
+        'use_face_det': not args.no_face,
+        'device': 'cuda' if torch.cuda.is_available() else 'cpu'
+    }
+    
+    if not args.no_face:
+        print("[INFO] Face Detection Enabled (MTCNN)")
+
     processor = ParallelProcessor(args.model)
-    score = processor.run_inference(args.video, args.batch_size, selector_config={'blur_threshold': args.blur_thresh}, visualize=args.visualize)
+    score = processor.run_inference(args.video, args.batch_size, selector_config=sel_config, visualize=args.visualize)
     
     print("\n" + "="*40)
     print(f"PRO-PIPELINE VIDEO SCORE: {score:.4f}")

@@ -11,10 +11,31 @@ class SmartFrameSelector:
     2. Sharpness (using Laplacian Variance)
     3. Face Presence (Future integration with Facenet)
     """
-    def __init__(self, hash_size=8, blur_threshold=5.0, diff_threshold=5):
+try:
+    from facenet_pytorch import MTCNN
+except ImportError:
+    print("Warning: facenet-pytorch not installed. Face detection disabled.")
+    MTCNN = None
+
+class SmartFrameSelector:
+    """
+    Selects the most representative and high-quality frames from a video.
+    
+    Filters:
+    1. Deduplication (using dHash)
+    2. Face Detection (MTCNN) - Highest Quality Face Crop
+    3. Sharpness (using Laplacian Variance)
+    """
+    def __init__(self, hash_size=8, blur_threshold=5.0, diff_threshold=5, use_face_det=True, device='cpu'):
         self.hash_size = hash_size
         self.blur_threshold = blur_threshold
         self.diff_threshold = diff_threshold
+        self.device = device
+        
+        self.mtcnn = None
+        if use_face_det and MTCNN is not None:
+            # Keep margin=0 or small to avoid background noise for now
+            self.mtcnn = MTCNN(keep_all=False, select_largest=True, device=device, margin=20)
         
     def get_dhash(self, image):
         """Compute Difference Hash."""
@@ -23,6 +44,45 @@ class SmartFrameSelector:
         # Compute difference between adjacent pixels
         diff = gray[:, 1:] > gray[:, :-1]
         return diff.flatten()
+        
+    def extract_face(self, frame):
+        """
+        Detects and returns the largest face crop. 
+        Returns None if no face is found (or returns original frame if configured).
+        """
+        if self.mtcnn is None:
+            return frame # Fallback to full frame
+            
+        try:
+            # MTCNN expects RGB (PIL or Tensor), but allows numpy if it works.
+            # Best to convert BGR to RGB
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            
+            # Detect
+            boxes, _ = self.mtcnn.detect(frame_rgb)
+            
+            if boxes is not None and len(boxes) > 0:
+                # Select largest box (already sorted if select_largest=True usually, but lets match logic)
+                # Box format: [x1, y1, x2, y2]
+                box = boxes[0]
+                x1, y1, x2, y2 = [int(b) for b in box]
+                
+                # Clip to frame dims
+                h, w, _ = frame.shape
+                x1 = max(0, x1); y1 = max(0, y1)
+                x2 = min(w, x2); y2 = min(h, y2)
+                
+                face_crop = frame[y1:y2, x1:x2]
+                
+                if face_crop.size == 0: 
+                    return None
+                    
+                return face_crop
+            else:
+                return None # No face found
+        except Exception as e:
+            print(f"Face Det Error: {e}")
+            return None
 
     def is_blurry(self, image):
         """Check if image is blurry using Laplacian variance."""
