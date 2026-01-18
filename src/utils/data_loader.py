@@ -6,13 +6,7 @@ from pathlib import Path
 import numpy as np
 
 class DeepfakeDataset(Dataset):
-    """
-    Dataset loader for Deepfake Detection.
-    Expected Structure:
-        root_dir/
-            real/
-            fake/
-    """
+
     def __init__(self, root_dir, phase='train', transform=None, limit=None):
         self.root_dir = Path(root_dir)
         self.transform = transform
@@ -52,9 +46,9 @@ class DeepfakeDataset(Dataset):
         if img.shape[0] != 1024 or img.shape[1] != 1024:
             img = cv2.resize(img, (1024, 1024))
             
-        # To Tensor (C, H, W)
+        # OpenCV stores as H, W, C --> Torch expects C, H, W
         img = torch.from_numpy(img).permute(2, 0, 1).float()
-        img = img / 255.0 # Normalize 0-1
+        img = img / 255.0 # Normalize 0-1 (converges faster during training)
         
         if self.transform:
             img = self.transform(img)

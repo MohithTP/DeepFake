@@ -12,7 +12,6 @@ def train(args):
     print(f"Using device: {device}")
     
     # 1. Dataset
-    # Use dummy data or real data
     train_dataset = DeepfakeDataset(root_dir=args.data_dir, phase='train', limit=args.limit)
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     
@@ -28,9 +27,7 @@ def train(args):
         print(f"Resuming from checkpoint: {args.resume_path}")
         checkpoint = torch.load(args.resume_path, map_location=device)
         model.load_state_dict(checkpoint)
-        # Note: In a full implementation, we'd also load optimizer state, 
-        # but for this MVP, we'll just start with model weights.
-        
+
         # Extract epoch number from filename if it follows dsmpe_net_epoch_N.pth
         if "epoch_" in args.resume_path:
             try:
@@ -71,7 +68,6 @@ def train(args):
             # Simple approach: Assign global label to all patches.
             # (Real=0 -> All patches 0. Fake=1 -> All patches 1? Not necessarily true, but good baseline)
             # Better: MIL (Multiple Instance Learning).
-            # For this MVP, let's broadcast the label.
             
             labels_expanded = labels.unsqueeze(1).repeat(1, 9) # (B, 9)
             patch_loss = criterion(patch_logits, labels_expanded)

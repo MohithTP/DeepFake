@@ -57,3 +57,7 @@ archive1
 archive1/cc.en.300.bin
 
 train_safe.py
+
+LSTM.py
+SVM.py
+Train_SVM.py
