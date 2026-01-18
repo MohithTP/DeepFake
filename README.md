@@ -1,4 +1,4 @@
-# DeepScan: Advanced Deepfake Detection Framework
+Advanced Deepfake Detection Framework
 
 > **Dual-Stream Multi-Patch Ensemble Network (DSMPE-Net)**
 > A robust forensic tool designed to detect generated media by analyzing both visual artifacts and frequency/spectral anomalies.
@@ -19,7 +19,7 @@
 
 Deepfakes are becoming perfect. Traditional detectors that look for "blurry faces" or "weird eyes" are failing because modern GANs (Generative Adversarial Networks) are too good.
 
-**DeepScan** takes a different approach. It assumes that while a deepfake might *look* perfect, the mathematical process of generating it leaves behind invisible "fingerprints" in the **Frequency Domain** (DCT coefficients).
+This model takes a different approach. It assumes that while a deepfake might *look* perfect, the mathematical process of generating it leaves behind invisible "fingerprints" in the **Frequency Domain** (DCT coefficients).
 
 *   **Spatial Stream:** Looks at the image like a human (RGB pixels).
 *   **Frequency Stream:** Looks at the image like a signal engineer (DCT transform).
@@ -67,13 +67,11 @@ pip install -r requirements.txt
 
 Since training Deep Learning models requires massive GPU power, we have optimized this project for **Kaggle Notebooks (Free Tesla T4 GPUs)**.
 
-### The "Sequential" Strategy
-Instead of complex distributed servers, we simply train the model in one long sequential run on Kaggle, saving a checkpoint after every epoch. This is robust and impossible to "break".
 
 **How to Train:**
 1.  **Open Kaggle:** Create a new Notebook.
 2.  **Add Dataset:** Search for and add the `wild-deepfake` dataset.
-3.  **Use the Script:** found in `kaggle_sequential_script.py`.
+3.  **Use the Script:** found in `kaggle_script.py`.
 4.  **Run:** It will automatically:
     *   Clone this repo.
     *   Install dependencies.
