@@ -4,8 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deepfake Shield | Secure Media Transfer</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <title>Sentinel | Deepfake Defense Grid</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -13,25 +15,36 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['Outfit', 'sans-serif'],
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Space Grotesk', 'monospace'],
                     },
                     colors: {
-                        brand: {
-                            dark: '#0B0F19',
-                            card: '#151B2B',
-                            accent: '#3B82F6',
-                            success: '#10B981',
-                            danger: '#EF4444',
+                        cyber: {
+                            black: '#020408',
+                            dark: '#0B101B',
+                            light: '#1B2436',
+                            primary: '#00F0FF', /* Cyber Cyan */
+                            primaryDim: 'rgba(0, 240, 255, 0.1)',
+                            accent: '#7000FF', /* Neon Purple */
+                            success: '#00FF94', /* Matrix Green */
+                            danger: '#FF0055', /* Cyber Red */
+                            warning: '#FFD600',
+                            text: '#E0E6ED',
+                            muted: '#94A3B8'
                         }
                     },
+                    backgroundImage: {
+                        'grid-pattern': "linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px)",
+                        'radial-glow': "radial-gradient(circle at center, rgba(0, 240, 255, 0.15) 0%, transparent 70%)"
+                    },
                     animation: {
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                        'scan': 'scan 2s linear infinite',
+                        'pulse-glow': 'pulseGlow 2s infinite',
+                        'spin-slow': 'spin 8s linear infinite',
                     },
                     keyframes: {
-                        scan: {
-                            '0%': { transform: 'translateY(-100%)' },
-                            '100%': { transform: 'translateY(100%)' },
+                        pulseGlow: {
+                            '0%, 100%': { boxShadow: '0 0 10px rgba(0, 240, 255, 0.2)' },
+                            '50%': { boxShadow: '0 0 20px rgba(0, 240, 255, 0.6)' },
                         }
                     }
                 }
@@ -40,264 +53,368 @@
     </script>
     <style>
         body {
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-            color: #e2e8f0;
+            background-color: #020408;
+            color: #E0E6ED;
         }
 
-        .glass {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
         }
 
-        .glass-strong {
-            background: rgba(15, 23, 42, 0.9);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        /* Chat Bubbles */
-        .msg-bubble {
+        .cyber-border {
             position: relative;
-            max-width: 85%;
-            padding: 12px 16px;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            line-height: 1.5;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            background: rgba(11, 16, 27, 0.8);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            backdrop-filter: blur(10px);
         }
 
-        .msg-bubble.own {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            align-self: flex-end;
-            border-bottom-right-radius: 2px;
-        }
-
-        .msg-bubble.other {
-            background: rgba(51, 65, 85, 0.8);
-            align-self: flex-start;
-            border-bottom-left-radius: 2px;
-        }
-
-        /* Scan Effect */
-        .scan-overlay {
+        .cyber-border::before {
+            content: '';
             position: absolute;
-            inset: 0;
-            background: linear-gradient(to bottom, transparent, rgba(59, 130, 246, 0.2), transparent);
-            z-index: 10;
-            animation: scan 2s linear infinite;
-            pointer-events: none;
+            top: -1px;
+            left: -1px;
+            width: 10px;
+            height: 10px;
+            border-top: 2px solid #00F0FF;
+            border-left: 2px solid #00F0FF;
         }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar {
+        .cyber-border::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            right: -1px;
+            width: 10px;
+            height: 10px;
+            border-bottom: 2px solid #00F0FF;
+            border-right: 2px solid #00F0FF;
+        }
+
+        .neon-text {
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+        }
+
+        .neon-text-danger {
+            text-shadow: 0 0 10px rgba(255, 0, 85, 0.5);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
         }
 
-        ::-webkit-scrollbar-track {
-            background: transparent;
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0B101B;
         }
 
-        ::-webkit-scrollbar-thumb {
-            background: #475569;
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #1B2436;
             border-radius: 3px;
         }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: #64748b;
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #00F0FF;
+        }
+
+        /* Message Bubbles */
+        .msg-own {
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.1) 0%, rgba(0, 240, 255, 0.05) 100%);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            border-radius: 12px 12px 0 12px;
+        }
+
+        .msg-other {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px 12px 12px 0;
         }
     </style>
 </head>
 
-<body class="h-screen w-screen overflow-hidden flex items-center justify-center p-4">
+<body class="h-screen w-screen overflow-hidden flex flex-col bg-grid relative text-cyber-text font-sans">
 
-    <!-- Login Screen -->
-    <div id="login-screen"
-        class="glass-strong p-8 rounded-2xl shadow-2xl w-full max-w-md text-center transform transition-all duration-300">
-        <div class="mb-6 flex justify-center">
-            <div
-                class="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center border border-blue-500/50">
-                <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.2-2.858.578-4.18M12 21a9.003 9.003 0 008.716-6.747M12 21a9.003 9.003 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S13.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418">
-                    </path>
-                </svg>
-            </div>
-        </div>
-        <h1 class="text-3xl font-bold mb-2 tracking-tight">Deepfake Shield</h1>
-        <p class="text-gray-400 mb-8 text-sm">Secure SaaS Media Gateway</p>
-
-        <input type="text" id="username-input"
-            class="w-full bg-brand-card border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition mb-4"
-            placeholder="Enter your alias (e.g. Alice)">
-
-        <button onclick="joinChat()"
-            class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-lg transition-all shadow-lg shadow-blue-500/30">
-            Enter Dashboard
-        </button>
+    <!-- Ambient Glow -->
+    <div
+        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyber-primary/5 rounded-full blur-[120px] pointer-events-none z-0">
     </div>
 
-    <!-- Main Dashboard -->
-    <div id="chat-screen"
-        class="hidden w-full max-w-5xl h-[90vh] glass rounded-2xl flex flex-col overflow-hidden shadow-2xl border border-gray-700/50">
+    <!-- MAIN APP CONTAINER -->
+    <div class="relative z-10 w-full h-full flex flex-col items-center justify-center p-4">
 
-        <!-- Header -->
-        <div class="h-16 border-b border-gray-700/50 flex justify-between items-center px-6 bg-black/20">
-            <div class="flex items-center gap-3">
-                <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-                <h2 class="font-semibold tracking-wide">Secure Broadcast Channel</h2>
-            </div>
-            <div class="flex items-center gap-4">
-                <div id="current-user"
-                    class="text-sm font-medium text-gray-300 bg-white/5 px-3 py-1 rounded-full border border-white/10">
-                </div>
-            </div>
-        </div>
-
-        <!-- Layout: Chat Area + Status Sidepanel? No, let's keep it simple vertical for better mobile support or single view -->
-        <!-- Chat Area -->
-        <div id="messages" class="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
-            <div class="message system text-center text-gray-500 text-xs uppercase tracking-widest my-4">Encryption
-                Verified • Channel Active</div>
-            <!-- Messages injected here -->
-        </div>
-
-        <!-- Upload & Status Bar -->
-        <div class="p-6 bg-black/30 border-t border-gray-700/50">
-
-            <!-- Dynamic Status Area -->
-            <div id="upload-status-area"
-                class="hidden mb-4 p-4 rounded-xl bg-gray-900/50 border border-gray-700/50 flex flex-col gap-2 relative overflow-hidden transition-all">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <div id="status-title" class="font-bold text-sm uppercase tracking-wider mb-1">Scanning Media...
-                        </div>
-                        <div id="status-desc" class="text-xs text-gray-400">Analyzing patterns with DSMPE Dual-Stream
-                            Network</div>
-                    </div>
-                </div>
-
-                <!-- Progress/Visualizer -->
-                <div id="loader-bar" class="h-1 w-full bg-gray-700 rounded-full mt-2 overflow-hidden">
+        <!-- LOG IN PANEL -->
+        <div id="login-screen"
+            class="w-full max-w-lg cyber-border p-10 flex flex-col items-center gap-6 shadow-2xl shadow-cyber-primary/10 transition-all duration-500">
+            <div class="w-24 h-24 rounded-full border-2 border-cyber-primary p-1 animate-pulse-glow relative">
+                <div
+                    class="w-full h-full bg-cyber-primary/10 rounded-full flex items-center justify-center overflow-hidden relative">
                     <div
-                        class="h-full bg-blue-500 animate-progress w-full origin-left scale-x-0 transition-transform duration-[2000ms]">
+                        class="absolute inset-0 bg-[url('https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbm95ZnJ3eXJ3eXJ3eXJ3eXJ3eXJ3eXJ3eXJ3eXJ3eXJ3eCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7TKSjRrfIPjeiVyM/giphy.gif')] bg-cover opacity-20 mix-blend-screen">
+                    </div>
+                    <svg class="w-10 h-10 text-cyber-primary relative z-10" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                </div>
+            </div>
+
+            <div class="text-center space-y-2">
+                <h1 class="text-4xl font-mono font-bold text-white tracking-tighter uppercase neon-text">Sentinel<span
+                        class="text-cyber-primary">.AI</span></h1>
+                <p class="text-cyber-muted text-sm font-mono tracking-widest uppercase">Deepfake Interception Interface
+                </p>
+            </div>
+
+            <div class="w-full relative group">
+                <div
+                    class="absolute -inset-0.5 bg-gradient-to-r from-cyber-primary to-cyber-accent rounded-lg blur opacity-30 group-hover:opacity-75 transition duration-1000 group-hover:duration-200">
+                </div>
+                <input type="text" id="username-input"
+                    class="relative w-full bg-cyber-dark border border-gray-800 text-white px-6 py-4 rounded-lg focus:outline-none focus:border-cyber-primary placeholder-gray-600 font-mono"
+                    placeholder="IDENTIFY_YOURSELF // >">
+            </div>
+
+            <button onclick="joinChat()"
+                class="w-full bg-cyber-primary/10 hover:bg-cyber-primary/20 text-cyber-primary border border-cyber-primary/50 font-bold py-3 px-8 rounded-lg transition-all transform hover:scale-[1.02] active:scale-95 uppercase tracking-widest font-mono text-sm group flex items-center justify-center gap-3">
+                <span>Access Network</span>
+                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+            </button>
+        </div>
+
+
+        <!-- DASHBOARD CONTAINER -->
+        <div id="chat-screen"
+            class="hidden w-full max-w-5xl h-[95vh] cyber-border flex flex-col shadow-2xl overflow-hidden relative">
+
+            <!-- Removed Scan Line Overlay and Sidebar as requested -->
+
+            <!-- Chat Header -->
+            <div
+                class="h-16 border-b border-white/5 flex items-center justify-between px-6 bg-cyber-dark/50 backdrop-blur-sm z-20">
+                <h2 class="font-mono font-bold text-lg tracking-wider text-white flex items-center gap-2">
+                    <span class="text-cyber-primary">#</span> SECURE_CHANNEL_01
+                </h2>
+                <div class="flex items-center gap-4">
+                    <span id="current-user-display" class="text-gray-400 text-xs font-mono">--</span>
+                    <!-- <span
+                        class="px-2 py-1 rounded bg-cyber-primary/10 border border-cyber-primary/30 text-cyber-primary text-[10px] uppercase font-bold tracking-wider">Top
+                        Secret</span> -->
+                </div>
+            </div>
+
+            <!-- Messages -->
+            <div id="messages" class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar relative">
+                <!-- Intro Message -->
+                <div class="flex justify-center my-4">
+                    <div
+                        class="bg-cyber-primary/5 border border-cyber-primary/20 px-4 py-2 rounded-full text-xs font-mono text-cyber-primary uppercase tracking-widest">
+                        Sentinel.AI Active - Monitoring Media Integrity
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area (Status + Controls) -->
+            <div class="p-6 bg-cyber-dark border-t border-white/5 z-20">
+
+                <!-- Dynamic Status Bar -->
+                <div id="status-bar-container"
+                    class="hidden mb-4 relative overflow-hidden rounded-lg border border-gray-800 bg-gray-900/50 p-4 transition-all duration-300">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-3">
+                            <div id="status-icon" class="animate-spin-slow text-cyber-primary">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                            </div>
+                            <div>
+                                <div id="status-text"
+                                    class="text-sm font-bold text-white uppercase tracking-wider font-mono">Analyzing...
+                                </div>
+                                <div id="status-sub" class="text-xs text-cyber-muted font-mono">Processing media through
+                                    neural network</div>
+                            </div>
+                        </div>
+                        <div id="status-score" class="font-mono text-xl font-bold text-gray-500">0%</div>
+                    </div>
+                    <!-- Progress Bar -->
+                    <div class="h-1 w-full bg-gray-800 rounded-full overflow-hidden">
+                        <div id="progress-bar-fill" class="h-full bg-cyber-primary w-0 transition-all duration-300">
+                        </div>
+                    </div>
+
+                    <!-- Patch Grid (Visualizer) -->
+                    <div id="patch-grid-container" class="hidden mt-3 pt-3 border-t border-gray-800">
+                        <div class="text-[10px] text-gray-500 uppercase tracking-widest mb-2 font-mono">Patch Anomaly
+                            Analysis</div>
+                        <div id="patch-grid" class="grid grid-cols-3 gap-1 w-24 h-24"></div>
                     </div>
                 </div>
 
-                <!-- Patch Grid (Initially Hidden) -->
-                <div id="patch-grid-container" class="hidden mt-3 pt-3 border-t border-gray-700/50">
-                    <div class="text-[10px] text-gray-400 uppercase tracking-widest mb-2">Patch Anomaly Heatmap</div>
-                    <div id="patch-grid" class="grid grid-cols-3 gap-1 w-24 h-24 mx-auto"></div>
+                <!-- Input Controls -->
+                <div class="flex items-center gap-4">
+                    <label class="cursor-pointer group relative">
+                        <input type="file" id="file-input" class="hidden" accept="image/*,video/*">
+                        <div
+                            class="w-12 h-12 bg-gray-800 rounded-lg flex items-center justify-center border border-gray-700 group-hover:border-cyber-primary group-hover:text-cyber-primary transition-all text-gray-400">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                    </label>
+
+                    <div class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-sm text-gray-400 font-mono overflow-hidden whitespace-nowrap text-ellipsis"
+                        id="filename-display">
+                        No Item Selected...
+                    </div>
+
+                    <button onclick="uploadMedia()"
+                        class="bg-cyber-primary hover:bg-cyan-400 text-black font-bold py-3 px-8 rounded-lg shadow-[0_0_15px_rgba(0,240,255,0.4)] hover:shadow-[0_0_25px_rgba(0,240,255,0.6)] transition-all uppercase tracking-widest text-sm flex items-center gap-2">
+                        <span>Upload</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                    </button>
                 </div>
             </div>
+        </div>
 
-            <!-- Controls -->
-            <div class="flex gap-3">
-                <label
-                    class="cursor-pointer flex items-center justify-center w-12 h-12 rounded-xl bg-gray-700 hover:bg-gray-600 transition text-gray-300 border border-gray-600">
-                    <input type="file" id="file-input" class="hidden" accept="image/*,video/*">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13">
-                        </path>
-                    </svg>
-                </label>
+    </div>
 
-                <div class="flex-1 bg-brand-card rounded-xl border border-gray-600 flex items-center px-4 text-gray-400 text-sm"
-                    id="filename-display">
-                    Select a file to broadcast...
-                </div>
-
-                <button onclick="uploadMedia()"
-                    class="px-6 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold transition shadow-lg shadow-blue-500/20 flex items-center gap-2">
-                    <span>Broadcast</span>
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-                    </svg>
-                </button>
+    <!-- NOTIFICATION TOAST -->
+    <div id="toast" class="fixed top-8 right-8 z-50 transform translate-x-96 transition-all duration-500">
+        <div
+            class="bg-cyber-dark/95 border-l-4 border-cyber-primary p-4 rounded shadow-2xl backdrop-blur flex items-start gap-4 max-w-sm">
+            <div id="toast-icon" class="mt-1"></div>
+            <div>
+                <h4 id="toast-title" class="font-bold text-white text-sm uppercase tracking-wider mb-1">Notification
+                </h4>
+                <p id="toast-msg" class="text-xs text-gray-400 font-mono"></p>
             </div>
         </div>
     </div>
 
-    <!-- Notification Toast -->
-    <div id="toast"
-        class="fixed top-6 right-6 p-4 rounded-xl glass shadow-2xl transform translate-x-64 transition-transform duration-300 hidden flex items-center gap-3 z-50 border-l-4">
-        <div id="toast-icon"></div>
-        <div>
-            <div id="toast-title" class="font-bold text-sm"></div>
-            <div id="toast-msg" class="text-xs text-gray-300"></div>
-        </div>
-    </div>
 
     <script>
         const socket = io();
         let username = '';
         const fileInput = document.getElementById('file-input');
+        let statusTimeout = null;
+
+        // --- UI Logic ---
 
         fileInput.addEventListener('change', (e) => {
-            const name = e.target.files[0]?.name || "Select a file to broadcast...";
-            document.getElementById('filename-display').innerText = name;
-            document.getElementById('filename-display').style.color = e.target.files[0] ? '#fff' : '#9ca3af';
+            // Reset previous status immediately upon new file selection
+            const statusBar = document.getElementById('status-bar-container');
+            if (!statusBar.classList.contains('hidden')) {
+                statusBar.classList.add('hidden');
+                clearTimeout(statusTimeout);
+            }
+
+            const name = e.target.files[0]?.name || "No Item Selected...";
+            const display = document.getElementById('filename-display');
+            display.innerText = name;
+            display.classList.toggle('text-cyber-primary', !!e.target.files[0]);
+            display.classList.toggle('text-gray-400', !e.target.files[0]);
         });
 
         function joinChat() {
             const input = document.getElementById('username-input');
             username = input.value.trim();
-            if (!username) return hoverShake(input);
+            if (!username) {
+                input.parentElement.classList.add('shake');
+                setTimeout(() => input.parentElement.classList.remove('shake'), 400);
+                return;
+            }
 
-            document.getElementById('login-screen').classList.add('opacity-0', 'scale-95');
+            const login = document.getElementById('login-screen');
+            const chat = document.getElementById('chat-screen');
+
+            login.style.opacity = '0';
+            login.style.transform = 'scale(0.9)';
+
             setTimeout(() => {
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('chat-screen').classList.remove('hidden');
-                document.getElementById('current-user').innerText = `${username}`;
+                login.classList.add('hidden');
+                chat.classList.remove('hidden');
+                document.getElementById('current-user-display').innerText = username;
                 socket.emit('join', { username: username });
-            }, 300);
+            }, 500);
         }
 
-        socket.on('status_message', (data) => addSystemMessage(data.msg));
+        // --- Socket Listeners ---
+
+        socket.on('status_message', (data) => { /* System Logs */ });
 
         socket.on('new_media', (data) => {
-            addMediaMessage(data);
-            showToast('Incoming Transmission', `New media from ${data.username}`, 'success');
+            appendMessage(data, false);
+        });
+
+        socket.on('blocked_alert', (data) => {
+            appendBlockedAlert(data);
         });
 
         socket.on('status_update', (data) => {
-            const statusDesc = document.getElementById('status-desc');
-            if (statusDesc) {
-                statusDesc.innerText = data.msg;
-                // Add excitement
-                statusDesc.classList.remove('text-gray-400');
-                statusDesc.classList.add('text-blue-300', 'animate-pulse');
-                setTimeout(() => statusDesc.classList.remove('animate-pulse'), 500);
+            const statusSub = document.getElementById('status-sub');
+            const progress = document.getElementById('progress-bar-fill');
+            const scoreLabel = document.getElementById('status-score');
+
+            if (statusSub) statusSub.innerText = data.msg;
+
+            // Try parse percentage from "Analyzing Face Batch #5/30"
+            if (data.msg.includes('/')) {
+                const parts = data.msg.match(/(\d+)\s*\/\s*(\d+)/);
+                if (parts && parts.length === 3) {
+                    const current = parseInt(parts[1]);
+                    const total = parseInt(parts[2]);
+                    if (total > 0) {
+                        const pct = Math.floor((current / total) * 100);
+                        progress.style.width = `${pct}%`;
+                        scoreLabel.innerText = `${pct}%`;
+                    }
+                }
+            } else if (data.msg.includes('Scanning frame stream')) {
+                // Indeterminate active state
+                progress.style.width = "20%"; // Starting
+                scoreLabel.innerText = "20%";
             }
         });
+
+        // --- Upload Flow ---
 
         async function uploadMedia() {
             const file = fileInput.files[0];
             if (!file) return;
 
-            // UI: Start Scanning State
-            const statusArea = document.getElementById('upload-status-area');
-            const statusTitle = document.getElementById('status-title');
-            const statusDesc = document.getElementById('status-desc');
-            const patchGrid = document.getElementById('patch-grid-container');
-            const loader = document.getElementById('loader-bar').firstElementChild;
+            // Reset UI
+            const statusBar = document.getElementById('status-bar-container');
+            const statusText = document.getElementById('status-text');
+            const statusSub = document.getElementById('status-sub');
+            const progress = document.getElementById('progress-bar-fill');
+            const patchGridContainer = document.getElementById('patch-grid-container');
+            const patchGrid = document.getElementById('patch-grid');
+            const scoreLabel = document.getElementById('status-score');
 
-            statusArea.classList.remove('hidden');
-            patchGrid.classList.add('hidden');
-            statusArea.className = "mb-4 p-4 rounded-xl bg-blue-900/20 border border-blue-500/30 relative overflow-hidden transition-all";
-            statusTitle.innerText = "RUNNING DEEPFAKE DETECTION...";
-            statusTitle.className = "font-bold text-sm uppercase tracking-wider mb-1 text-blue-400";
-            statusDesc.innerText = "Analyzing frame artifacts and frequency consistencies...";
+            // Clear any lingering timeouts
+            if (statusTimeout) clearTimeout(statusTimeout);
 
-            // Animate Loader
-            loader.style.transition = 'none';
-            loader.style.transform = 'scaleX(0)';
-            setTimeout(() => {
-                loader.style.transition = 'transform 2s ease-in-out';
-                loader.style.transform = 'scaleX(1)';
-            }, 10);
+            statusBar.classList.remove('hidden', 'border-red-600', 'border-green-500', 'bg-red-900/30', 'bg-green-900/30');
+            statusBar.classList.add('border-cyber-primary', 'bg-cyber-primary/10');
+            patchGridContainer.classList.add('hidden');
+
+            statusText.innerText = "SCANNING FOR DEEPFAKES...";
+            statusText.className = "text-sm font-bold text-cyber-primary uppercase tracking-wider font-mono";
+            statusSub.innerText = "Initializing neural network...";
+            progress.style.width = "5%";
+            scoreLabel.innerText = "5%";
 
             const formData = new FormData();
             formData.append('file', file);
@@ -308,55 +425,61 @@
                 const response = await fetch('/api/upload', { method: 'POST', body: formData });
                 const result = await response.json();
 
-                // Keep visually "processing" for at least 1.5s so user sees the animation
-                setTimeout(() => {
-                    handleResult(result, file.name);
-                }, 1500);
+                // Jump to 100% on done
+                progress.style.width = "100%";
+                scoreLabel.innerText = "100%";
+
+                setTimeout(() => handleResult(result, file.name), 200);
 
             } catch (err) {
                 console.error(err);
-                statusArea.classList.add('hidden');
-                showToast('Error', 'Upload failed', 'error');
+                showToast("Upload Error", "Server communication failed", "error");
+                statusBar.classList.add('hidden');
             }
         }
 
-        function handleResult(result, fileName) {
-            const statusArea = document.getElementById('upload-status-area');
-            const statusTitle = document.getElementById('status-title');
-            const statusDesc = document.getElementById('status-desc');
-            const patchContainer = document.getElementById('patch-grid-container');
+        function handleResult(result, filename) {
+            const statusBar = document.getElementById('status-bar-container');
+            const statusText = document.getElementById('status-text');
+            const statusSub = document.getElementById('status-sub');
+            const patchGridContainer = document.getElementById('patch-grid-container');
             const patchGrid = document.getElementById('patch-grid');
 
             if (result.status === 'blocked') {
-                statusArea.className = "mb-4 p-4 rounded-xl bg-red-900/20 border border-red-500/50 relative overflow-hidden transition-all";
-                statusTitle.innerText = "THREAT BLOCKED";
-                statusTitle.className = "font-bold text-sm uppercase tracking-wider mb-1 text-red-400";
-                statusDesc.innerText = `Deepfake detected with score ${result.score.toFixed(4)}. Media dropped.`;
-                showToast('Security Alert', 'Malicious content blocked', 'error');
+                // BLOCKED UI STATE
+                statusBar.classList.remove('border-cyber-primary', 'bg-cyber-primary/10');
+                statusBar.classList.add('border-red-600', 'bg-red-900/30');
+                statusText.innerText = "THREAT NEUTRALIZED";
+                statusText.className = "text-sm font-bold text-red-500 uppercase tracking-wider font-mono animate-pulse";
+                statusSub.innerText = `Deepfake score: ${result.score.toFixed(4)}. Content dropped.`;
+                showToast("Security Alert", "Deepfake content blocked internally.", "error");
 
-                // Show Grid
-                if (result.patch_scores) {
+                // Render Patch Grid
+                if (result.patch_scores && result.patch_scores.length > 0) {
                     renderGrid(result.patch_scores, patchGrid);
-                    patchContainer.classList.remove('hidden');
+                    patchGridContainer.classList.remove('hidden');
                 }
 
-            } else if (result.status === 'success') {
-                statusArea.className = "mb-4 p-4 rounded-xl bg-green-900/20 border border-green-500/50 relative overflow-hidden transition-all";
-                statusTitle.innerText = "VERIFIED AUTHENTIC";
-                statusTitle.className = "font-bold text-sm uppercase tracking-wider mb-1 text-green-400";
-                statusDesc.innerText = `Content safe (Score: ${result.score.toFixed(4)}). Broadcasting to secure channel...`;
+                // Blocked Cooldown: 20s
+                statusTimeout = setTimeout(() => {
+                    statusBar.classList.add('hidden');
+                    resetInput();
+                }, 20000);
 
-                if (result.patch_scores) {
-                    renderGrid(result.patch_scores, patchGrid);
-                    patchContainer.classList.remove('hidden');
-                }
+            } else {
+                // SUCCESS UI STATE
+                statusBar.classList.remove('border-cyber-primary', 'bg-cyber-primary/10');
+                statusBar.classList.add('border-green-500', 'bg-green-900/30');
+                statusText.innerText = "VERIFIED AUTHENTIC";
+                statusText.className = "text-sm font-bold text-cyber-success uppercase tracking-wider font-mono";
+                statusSub.innerText = `Score: ${result.score.toFixed(4)}. Broadcasting to secure channel...`;
+                showToast("Verified", "Content safe. Broadcasting...", "success");
 
-                // Clear after success
-                setTimeout(() => {
-                    statusArea.classList.add('hidden');
-                    document.getElementById('filename-display').innerText = "Select a file to broadcast...";
-                    fileInput.value = '';
-                }, 6000);
+                // Success Cooldown: 10s
+                statusTimeout = setTimeout(() => {
+                    statusBar.classList.add('hidden');
+                    resetInput();
+                }, 10000);
             }
         }
 
@@ -364,7 +487,6 @@
             container.innerHTML = '';
             scores.forEach(s => {
                 const div = document.createElement('div');
-                // Color scale
                 const isBad = s > 0.5;
                 div.className = `w-full h-full rounded flex items-center justify-center text-[10px] font-mono border ${isBad ? 'bg-red-500/30 border-red-500/50 text-red-200' : 'bg-green-500/30 border-green-500/50 text-green-200'}`;
                 div.innerText = s.toFixed(2);
@@ -372,42 +494,85 @@
             });
         }
 
-        function addSystemMessage(msg) {
-            const msgs = document.getElementById('messages');
-            const div = document.createElement('div');
-            div.className = "message system text-center text-gray-500 text-xs uppercase tracking-widest my-2";
-            div.innerText = msg;
-            msgs.appendChild(div);
-            msgs.scrollTop = msgs.scrollHeight;
+        function resetInput() {
+            fileInput.value = '';
+            const display = document.getElementById('filename-display');
+            display.innerText = "No Item Selected...";
+            display.className = "flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-sm text-gray-400 font-mono overflow-hidden whitespace-nowrap text-ellipsis";
+            display.classList.remove('text-cyber-primary');
+            display.classList.add('text-gray-400');
         }
 
-        function addMediaMessage(data) {
+
+        // --- Chat Messages ---
+
+        function appendMessage(data, isSystem) {
             const msgs = document.getElementById('messages');
             const isMe = data.username === username;
 
             const div = document.createElement('div');
-            div.className = `msg-bubble ${isMe ? 'own' : 'other'} flex flex-col gap-2`;
+            div.className = `flex flex-col gap-1 w-full max-w-[85%] ${isMe ? 'items-end ml-auto' : 'items-start'}`;
 
-            let content = '';
+            const label = document.createElement('div');
+            label.className = "flex items-center gap-2 text-[10px] text-gray-400 uppercase font-mono tracking-wider";
+            label.innerHTML = `<span class="${isMe ? 'text-cyber-primary' : 'text-gray-300'} font-bold">${data.username}</span> • ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+
+            const bubble = document.createElement('div');
+            bubble.className = isMe ? 'msg-own p-3' : 'msg-other p-3';
+
+            let contentHtml = '';
             if (data.is_image) {
-                content = `<div class="relative group rounded-lg overflow-hidden border border-white/10">
-                    <img src="${data.file_url}" class="max-w-full rounded-lg" onload="this.parentElement.parentElement.scrollIntoView()">
-                    <div class="absolute inset-0 bg-green-500/10 pointer-events-none"></div>
-                    <div class="absolute bottom-2 right-2 bg-black/60 px-2 py-1 rounded text-[10px] backdrop-blur text-green-400 border border-green-500/30 flex items-center gap-1">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        VERIFIED REAL
+                contentHtml = `
+                    <div class="relative group rounded overflow-hidden border border-white/10">
+                        <img src="${data.file_url}" class="max-w-xs md:max-w-md w-full object-cover">
+                        <div class="absolute bottom-2 right-2 flex items-center gap-1 bg-black/70 backdrop-blur px-2 py-1 rounded border border-cyber-success/30 text-cyber-success text-[10px] uppercase font-bold tracking-widest">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> 
+                            Real
+                        </div>
                     </div>
-                </div>`;
+                `;
             } else {
-                content = `<video controls src="${data.file_url}" class="max-w-full rounded-lg border border-white/10"></video>`;
+                contentHtml = `
+                    <div class="relative group rounded overflow-hidden border border-white/10">
+                        <video controls src="${data.file_url}" class="max-w-xs md:max-w-md w-full"></video>
+                         <div class="mt-2 flex items-center gap-1 text-cyber-success text-[10px] uppercase font-bold tracking-widest">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> 
+                            Video Integrity Verified
+                        </div>
+                    </div>
+                `;
             }
 
+            bubble.innerHTML = contentHtml;
+            div.appendChild(label);
+            div.appendChild(bubble);
+            msgs.appendChild(div);
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        function appendBlockedAlert(data) {
+            const msgs = document.getElementById('messages');
+
+            const div = document.createElement('div');
+            // Center alert
+            div.className = "w-full flex justify-center my-6 opacity-0 animate-[pulse_0.5s_ease-in_forwards]";
+
+            // Manually handle animation
+            setTimeout(() => div.classList.remove('opacity-0'), 50);
+
             div.innerHTML = `
-                <div class="flex items-center justify-between text-xs opacity-70 mb-1">
-                    <span class="font-bold">${data.username}</span>
-                    <span>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                <div class="w-full max-w-2xl bg-red-900/10 border-l-4 border-red-600 p-4 rounded-r flex items-start gap-4 backdrop-blur-sm relative overflow-hidden">
+                    <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagonal-striped-brick.png')] opacity-10"></div>
+                    <div class="text-red-500 mt-1 animate-pulse">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
+                    <div class="flex-1 z-10">
+                        <h3 class="text-red-500 font-bold uppercase tracking-widest text-sm mb-1">Security Alert: Threat Neutralized</h3>
+                        <p class="text-gray-300 text-xs font-mono">
+                            A file uploaded by <span class="text-white font-bold underline decoration-red-500">${data.username}</span> (${data.filename}) was identified as a Deepfake (Score: ${data.score.toFixed(3)}) and successfully blocked.
+                        </p>
+                    </div>
                 </div>
-                ${content}
             `;
 
             msgs.appendChild(div);
@@ -416,24 +581,40 @@
 
         function showToast(title, msg, type) {
             const toast = document.getElementById('toast');
-            const colors = type === 'error' ? 'border-red-500 text-red-400' : 'border-green-500 text-green-400';
+            const icon = document.getElementById('toast-icon');
+            const colorClass = type === 'error' ? 'border-red-500' : 'border-cyber-success';
 
-            toast.className = `fixed top-6 right-6 p-4 rounded-xl glass shadow-2xl transition-all duration-300 flex items-center gap-3 z-50 border-l-4 ${colors}`;
             document.getElementById('toast-title').innerText = title;
+            document.getElementById('toast-title').className = `font-bold text-sm uppercase tracking-wider mb-1 ${type === 'error' ? 'text-red-500 neon-text-danger' : 'text-cyber-success neon-text'}`;
             document.getElementById('toast-msg').innerText = msg;
 
-            toast.classList.remove('hidden', 'translate-x-64');
+            toast.className = `fixed top-8 right-8 z-50 transform transition-all duration-500 bg-cyber-dark/95 border-l-4 p-4 rounded shadow-2xl backdrop-blur flex items-start gap-4 max-w-sm ${colorClass}`;
+
+            if (type === 'error') {
+                icon.innerHTML = `<svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+            } else {
+                icon.innerHTML = `<svg class="w-6 h-6 text-cyber-success" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+            }
+
+            toast.classList.remove('translate-x-96');
 
             setTimeout(() => {
-                toast.classList.add('translate-x-64');
-                setTimeout(() => toast.classList.add('hidden'), 300);
-            }, 4000);
+                toast.classList.add('translate-x-96');
+            }, 5000);
         }
 
-        function hoverShake(el) {
-            el.classList.add('animate-pulse', 'border-red-500');
-            setTimeout(() => el.classList.remove('animate-pulse', 'border-red-500'), 500);
-        }
+        const style = document.createElement('style');
+        style.type = 'text/css';
+        style.innerHTML = `
+            @keyframes shake {
+                0%, 100% {transform: translateX(0);}
+                10%, 30%, 50%, 70%, 90% {transform: translateX(-4px);}
+                20%, 40%, 60%, 80% {transform: translateX(4px);}
+            }
+            .shake {animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;}
+        `;
+        document.getElementsByTagName('head')[0].appendChild(style);
+
     </script>
 </body>
 
