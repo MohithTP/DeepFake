@@ -5,7 +5,7 @@ import argparse
 from src.models.dsmpe_net import DSMPE_Net
 from src.models.patch_extractor import PatchGenerator
 
-def run_inference(args):
+def run_inference(args): 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Inference running on: {device}")
     

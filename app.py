@@ -25,7 +25,7 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 # Initialize DeepFake Detector (Global for now)
 # Expects weights file in root as per plan
-MODEL_WEIGHTS = 'dsmpe_net_final.pth' # User must provide this
+MODEL_WEIGHTS = 'dsmpe_net_epoch_4.pth' # User must provide this
 detector = None
 
 def get_detector():
@@ -101,7 +101,7 @@ def upload_file_api():
 
         # Format patch scores for logging
         patch_log_str = ""
-        if patch_scores and len(patch_scores) == 9:
+        if patch_scores is not None and len(patch_scores) == 9:
             rows = [patch_scores[i:i+3] for i in range(0, 9, 3)]
             patch_log_str = "\n   Patch Analysis:\n" + "\n".join([f"   Row {i+1}: {' | '.join([f'{p:.2f}' for p in row])}" for i, row in enumerate(rows)])
         
@@ -149,5 +149,5 @@ def upload_file_api():
 
 if __name__ == '__main__':
     # Initialize detector on start if possible
-    get_detector()
+    # get_detector()
     socketio.run(app, debug=True, port=5000)

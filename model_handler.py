@@ -107,8 +107,20 @@ class DeepFakeDetector:
             with torch.no_grad():
                 global_logit, patch_logits = self.model(img_tensor)
                 prob = torch.sigmoid(global_logit).item()
+
+                # global_logit, patch_logits = self.model(img_tensor)
+                
+                # # Combine global and patch logits
+                # # patch_logits shape: (1, 9) usually
+                # all_logits = torch.cat([global_logit.view(-1), patch_logits.view(-1)])
+                # all_probs = torch.sigmoid(all_logits)
+                
+                # # Top-K Average Consensus (K=5)
+                # k = 5
+                # top_k_probs, _ = torch.topk(all_probs, min(k, len(all_probs)))
+                # prob = torch.mean(top_k_probs).item()
+
                 patch_probs = torch.sigmoid(patch_logits).squeeze().cpu().numpy().tolist()
-            
             return prob > 0.5, prob, patch_probs, {'type': 'image'}
         except Exception as e:
             print(f"Image inference error: {e}")

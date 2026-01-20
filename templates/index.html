@@ -148,9 +148,9 @@
             <div class="w-24 h-24 rounded-full border-2 border-cyber-primary p-1 animate-pulse-glow relative">
                 <div
                     class="w-full h-full bg-cyber-primary/10 rounded-full flex items-center justify-center overflow-hidden relative">
-                    <div
+                    <!-- <div
                         class="absolute inset-0 bg-[url('https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbm95ZnJ3eXJ3eXJ3eXJ3eXJ3eXJ3eXJ3eXJ3eXJ3eXJ3eCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7TKSjRrfIPjeiVyM/giphy.gif')] bg-cover opacity-20 mix-blend-screen">
-                    </div>
+                    </div> -->
                     <svg class="w-10 h-10 text-cyber-primary relative z-10" fill="none" stroke="currentColor"
                         viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
@@ -352,7 +352,9 @@
 
         // --- Socket Listeners ---
 
-        socket.on('status_message', (data) => { /* System Logs */ });
+        socket.on('status_message', (data) => {
+            appendSystemMessage(data.msg);
+        });
 
         socket.on('new_media', (data) => {
             appendMessage(data, false);
@@ -575,6 +577,15 @@
                 </div>
             `;
 
+            msgs.appendChild(div);
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        function appendSystemMessage(msg) {
+            const msgs = document.getElementById('messages');
+            const div = document.createElement('div');
+            div.className = "flex justify-center my-2";
+            div.innerHTML = `<div class="bg-gray-800/50 border border-gray-700/50 px-3 py-1 rounded-full text-[10px] font-mono text-gray-400 uppercase tracking-widest">${msg}</div>`;
             msgs.appendChild(div);
             msgs.scrollTop = msgs.scrollHeight;
         }
