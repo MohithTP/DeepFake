@@ -52,7 +52,6 @@ uv.lock
 welfake_clean.csv
 WELFake_Dataset.csv
 create_kaggle_bundle.py
-evaluate_dataset.py
 generate_graphs.py
 visualize_pipeline_steps.py
 archive1
