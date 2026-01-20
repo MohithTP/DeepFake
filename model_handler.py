@@ -105,7 +105,7 @@ class DeepFakeDetector:
             img_tensor = img_tensor.unsqueeze(0).to(self.device) # (1, 3, 1024, 1024)
 
             with torch.no_grad():
-                global_logit, patch_logits = self.model(img_tensor)
+                global_logit, patch_logits = self._run_inference_with_timing(img_tensor)
                 prob = torch.sigmoid(global_logit).item()
 
                 # global_logit, patch_logits = self.model(img_tensor)
@@ -200,7 +200,7 @@ class DeepFakeDetector:
                     img_tensor = img_tensor.unsqueeze(0).to(self.device)
                     
                     with torch.no_grad():
-                        logits, _ = self.model(img_tensor)
+                        logits, _ = self._run_inference_with_timing(img_tensor)
                         prob = torch.sigmoid(logits).item()
                         scores.append(prob)
                         frames_processed += 1
@@ -229,3 +229,54 @@ class DeepFakeDetector:
         except Exception as e:
             print(f"Video inference error: {e}")
             return False, 0.0, [], {'frames_processed': 0, 'frames_sampled': 0, 'type': 'video', 'error': str(e)}, {'error': str(e)}
+
+    def _run_inference_with_timing(self, img_tensor):
+        """
+        Manually run model forward pass to profile timing of specific stages.
+        Replicates DSMPE_Net forward logic.
+        """
+        import time
+        import logging
+
+        if img_tensor.is_cuda:
+            torch.cuda.synchronize()
+        t_start = time.time()
+        
+        B = img_tensor.shape[0]
+        model = self.model
+        
+        # --- Stage 1: Patch Extraction, Features, Patch Classifiers ---
+        with torch.no_grad():
+            # 1. Patches
+            patches = model.patch_gen(img_tensor) # (B, 9, 3, 256, 256)
+            patches_flat = patches.reshape(-1, 3, 256, 256)
+            
+            # 2. Streams
+            s_feat = model.spatial(patches_flat)
+            f_feat = model.freq(patches_flat)
+            fused = torch.cat([s_feat, f_feat], dim=1) # (B*9, 4096)
+            
+            # 3. Patch Supervision
+            patch_logits = model.patch_classifier(fused)
+            patch_logits = patch_logits.reshape(B, model.num_patches)
+            
+            if img_tensor.is_cuda:
+                torch.cuda.synchronize()
+            t_mid = time.time()
+            
+            # --- Stage 2: Global Meta-Classifier ---
+            # 4. Meta Classification
+            meta_input = fused.reshape(B, -1)
+            global_logit = model.meta_classifier(meta_input)
+            
+            if img_tensor.is_cuda:
+                torch.cuda.synchronize()
+            t_end = time.time()
+            
+        time_patch = t_mid - t_start
+        time_global = t_end - t_mid
+        time_total = t_end - t_start
+        
+        logging.info(f"TIMING [Inference]: Patch Analysis: {time_patch:.4f}s | Global Decision: {time_global:.4f}s | Total: {time_total:.4f}s")
+        
+        return global_logit, patch_logits
