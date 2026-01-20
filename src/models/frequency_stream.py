@@ -21,7 +21,7 @@ class FrequencyStream(nn.Module):
         """
         x: (B*9, 3, 256, 256) RGB patches
         """
-        # 1. Convert to Freq Domain
+        # 1. Convert from Spatial to Freq Domain
         x_dct = self.dct(x) # (B*9, 3, 256, 256)
         
         # 2. Extract Features

@@ -59,7 +59,23 @@ def frame_producer(video_path, queue, selector_config):
                     if not selector.is_blurry(processed_frame):
                         # Pre-preprocess: Model expects 1024x1024 RGB
                         img = cv2.resize(processed_frame, (1024, 1024))
-                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                        # processed_frame comes from selector.extract_face.
+                        # If MTCNN is used inside, it usually returns RGB.
+                        # If selector returns RGB, we should NOT convert BGR2RGB again.
+                        
+                        # Let's assume selector returns BGR (OpenCV standard) for safety, 
+                        # OR if it returns RGB, we need to know.
+                        
+                        # Fix: Check frame_selector.py first.
+                        # For now, let's just ensure we divide by 255.0
+                        
+                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) # Potentially double-swap?
+                        
+                        # DEBUG: Save one frame to check color/crop
+                        if selected_count == 0:
+                            debug_save = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+                            cv2.imwrite("debug_input_frame.png", debug_save)
+                            
                         img = img.astype(np.float32) / 255.0
                         queue.put(img)
                         selected_count += 1
@@ -125,10 +141,18 @@ class ParallelProcessor:
                         print(f"   [!] Visualization failed: {e}")
                 
                 
-                if len(batch) == batch_size:
                     input_tensor = torch.from_numpy(np.array(batch)).permute(0, 3, 1, 2).to(self.device)
+                    # DEBUG: Check Input
+                    if len(scores) == 0:
+                         print(f"   [DEBUG] Input Tensor Stats: Min={input_tensor.min():.4f}, Max={input_tensor.max():.4f}, Mean={input_tensor.mean():.4f}")
+                         
                     with torch.no_grad():
                         logits, _ = model(input_tensor)
+                        
+                        # DEBUG: Check Logits
+                        if len(scores) == 0:
+                            print(f"   [DEBUG] Raw Logits: {logits.cpu().numpy().flatten()}")
+                            
                         probs = torch.sigmoid(logits).cpu().numpy().flatten()
                         scores.extend(probs)
                     batch = []

@@ -1,7 +1,7 @@
 import os
 import secrets
 from flask import Flask, render_template, request, send_from_directory
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO, emit #type:ignore
 from werkzeug.utils import secure_filename
 from model_handler import DeepFakeDetector
 
