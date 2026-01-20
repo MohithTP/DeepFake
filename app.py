@@ -50,7 +50,7 @@ def uploaded_file(filename):
 @socketio.on('join')
 def on_join(data):
     username = data['username']
-    print(f"{username} has joined the channel.")
+    print(f"============= {username} has joined the channel =============")
     emit('status_message', {'msg': f'{username} has joined the channel.'}, broadcast=True)
 
 @socketio.on('upload_media')
@@ -116,7 +116,13 @@ def upload_file_api():
         if is_fake:
             print(f"BLOCKED: {log_msg}")
             logging.warning(f"BLOCKED DEEPFAKE: {log_msg}")
-            # Notify sender
+            # Notify sender and Broadcast Alert
+            socketio.emit('blocked_alert', {
+                'username': username,
+                'filename': filename,
+                'score': score
+            })
+            
             return {
                 'status': 'blocked',
                 'reason': 'Deepfake Detected',
