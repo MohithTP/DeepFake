@@ -25,7 +25,7 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 # Initialize DeepFake Detector (Global for now)
 # Expects weights file in root as per plan
-MODEL_WEIGHTS = 'dsmpe_net_final.pth' # User must provide this
+MODEL_WEIGHTS = 'weights\dsmpe_net_epoch_4.pth' # User must provide this
 detector = None
 
 def get_detector():

@@ -10,12 +10,6 @@ class SpatialStream(nn.Module):
     def __init__(self, pretrained=True):
         super(SpatialStream, self).__init__()
         # Using timm's xception or legacy_xception
-        # If xception is not available in timm factory easily, we can use efficientnet or resnet.
-        # But report says Xception.
-        # Check timm models: 'xception', 'legacy_xception'.
-        # We will use 'xception' if available, otherwise 'tf_xception_65' or similar.
-        # To be safe and robust, let's use 'xception' from timm.
-        
         # We remove the classifier head (num_classes=0) to get features.
         # Standard Xception output is 2048 dims.
         try:
