@@ -170,7 +170,56 @@ class ParallelProcessor:
             p.join()
         
         elapsed = time.time() - start_time
-        final_score = np.mean(scores) if scores else 0.5
+        
+        # --- DEEPSCAN 2.0: SMART CONSENSUS LOGIC ---
+        # Instead of simple mean, we look for "Strong Evidence".
+        # Deepfakes often have "flicker" where some frames look real, but some look obviously fake.
+        
+        scores = np.array(scores)
+        if len(scores) == 0:
+            return 0.0
+            
+        # 1. High Confidence Detection Filter
+        # How many frames are we "Very Sure" (> 0.8) are fake?
+        strong_fake_count = np.sum(scores > 0.8)
+        strong_fake_ratio = strong_fake_count / len(scores)
+        
+        # 2. Consecutive Spike Check (Temporal Consistency)
+        # Deepfakes don't usually turn on/off for 1 frame. They persist.
+        # Check for 3 consecutive frames > 0.7
+        consecutive_fake = 0
+        max_consecutive = 0
+        current_streak = 0
+        for s in scores:
+            if s > 0.7:
+                current_streak += 1
+            else:
+                max_consecutive = max(max_consecutive, current_streak)
+                current_streak = 0
+        max_consecutive = max(max_consecutive, current_streak)
+        
+        # 3. Power Mean (Emphasize outlier high scores)
+        # If we have 100 frames, and 5 are 0.99 and 95 are 0.01:
+        # Arithmetic Mean = 0.059 (VERDICT: REAL) -> WRONG
+        # Power Mean (p=2) will be higher.
+        # But let's use a "Top-K" logic.
+        
+        top_k_score = np.mean(np.sort(scores)[-max(1, int(len(scores)*0.1)):]) # Top 10%
+        
+        print(f"Stats: HighConf Frames: {strong_fake_count}/{len(scores)} | Max Streak: {max_consecutive} | Top 10% Means: {top_k_score:.4f}")
+        
+        # --- FINAL VERDICT ---
+        # Rule A: If > 20% of frames are specific Strong Fakes
+        if strong_fake_ratio > 0.2:
+            final_score = 0.95 # Confirmed Fake
+        # Rule B: If we found a sustained glitch (Streak > 5 frames)
+        elif max_consecutive >= 5:
+            final_score = 0.85 # Probable Fake
+        # Rule C: If the Top 10% most suspicious frames average > 0.85
+        elif top_k_score > 0.85:
+            final_score = 0.80 # Suspicious
+        else:
+            final_score = np.mean(scores) # Fallback to average (Likely Real)
         
         print(f"Analysis Complete in {elapsed:.2f}s.")
         print(f"Processed {len(scores)} high-quality frames.")

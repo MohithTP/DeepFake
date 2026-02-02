@@ -28,48 +28,39 @@ class DSMPE_Net(nn.Module):
         self.freq = FrequencyStream(pretrained=pretrained)
         
         # Concat dim
-        self.fusion_dim = self.spatial.feature_dim + self.freq.feature_dim
+        self.fusion_dim = self.spatial.feature_dim + self.freq.feature_dim # 4096
         
-        # 3. Patch-level Classifier (for Multi-Level Supervision)
-        # Predicts Real/Fake for EACH patch
+        # 3. Patch-level Classifier (Auxiliary)
         self.patch_classifier = nn.Sequential(
             nn.Linear(self.fusion_dim, 512),
             nn.ReLU(),
             nn.Dropout(0.5),
-            nn.Linear(512, 1) # Sigmoid applied in Loss usually, but here raw logits
+            nn.Linear(512, 1)
         )
         
-        # 4. Ensemble Meta-Classifier
-        # Takes all patch features and aggregates them.
-        # Simple approach: Concat all patch features? 9 * 4096 = 36864 dims (Large!)
-        # Better approach: Attention or MLP aggregation.
-        # Let's use a simple MLP aggregation as per typical ensemble logic.
+        # 4. ViT Aggregator (DeepScan 2.0)
+        # Replaces the flat MLP with a Transformer Encoder
+        # Input: Sequence of (9 patches + 1 CLS token)
+        # Dim: fusion_dim (4096)
         
-        self.meta_input_dim = self.fusion_dim * num_patches 
+        self.cls_token = nn.Parameter(torch.randn(1, 1, self.fusion_dim))
+        self.pos_embedding = nn.Parameter(torch.randn(1, num_patches + 1, self.fusion_dim))
         
-        self.meta_classifier = nn.Sequential(
-            nn.Linear(self.meta_input_dim, 1024),
+        encoder_layer = nn.TransformerEncoderLayer(d_model=self.fusion_dim, nhead=8, batch_first=True)
+        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=2)
+        
+        self.head = nn.Sequential(
+            nn.Linear(self.fusion_dim, 1024),
             nn.ReLU(),
             nn.Dropout(0.5),
-            nn.Linear(1024, 256),
-            nn.ReLU(),
-            nn.Linear(256, 1) # Global Logit
+            nn.Linear(1024, 1) # Global Logit from CLS token
         )
 
     def forward(self, x):
-        """
-        x: (B, 3, 1024, 1024)
-        Returns:
-            global_logit: (B, 1)
-            patch_logits: (B, 9)
-        """
         B = x.shape[0]
         
         # 1. Patches
         patches = self.patch_gen(x) # (B, 9, 3, 256, 256)
-        
-        # Flatten for batch processing
-        # (B*9, 3, 256, 256)
         patches_flat = patches.reshape(-1, 3, 256, 256)
         
         # 2. Streams
@@ -80,13 +71,28 @@ class DSMPE_Net(nn.Module):
         fused = torch.cat([s_feat, f_feat], dim=1) # (B*9, 4096)
         
         # 3. Patch Supervision
-        patch_logits = self.patch_classifier(fused) # (B*9, 1)
+        patch_logits = self.patch_classifier(fused)
         patch_logits = patch_logits.reshape(B, self.num_patches) # (B, 9)
         
-        # 4. Meta Classification
-        # Reshape to (B, 9*4096)
-        meta_input = fused.reshape(B, -1)
-        global_logit = self.meta_classifier(meta_input) # (B, 1)
+        # 4. ViT Aggregation
+        # Reshape to Sequence: (B, 9, 4096)
+        sequence = fused.reshape(B, self.num_patches, -1)
+        
+        # Add CLS Token
+        cls_tokens = self.cls_token.repeat(B, 1, 1) # (B, 1, 4096)
+        sequence = torch.cat([cls_tokens, sequence], dim=1) # (B, 10, 4096)
+        
+        # Add Positional Embedding
+        sequence += self.pos_embedding[:, :(self.num_patches + 1)]
+        
+        # Transformer Pass
+        transformer_out = self.transformer(sequence) # (B, 10, 4096)
+        
+        # Extract CLS token output (Index 0)
+        cls_out = transformer_out[:, 0] # (B, 4096)
+        
+        # Final Classification
+        global_logit = self.head(cls_out) # (B, 1)
         
         return global_logit, patch_logits
 
