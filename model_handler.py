@@ -25,11 +25,14 @@ if DEEPFAKE_MODEL_PATH not in sys.path:
 
 try:
     if torch:
-        from src.models.dsmpe_net import DSMPE_Net
-        from src.models.patch_extractor import PatchGenerator
-        from src.video.frame_selector import SmartFrameSelector
+        from src.models.dsmpe_net import DSMPE_Net # type: ignore
+        from src.models.patch_extractor import PatchGenerator # type: ignore
+        from src.video.frame_selector import SmartFrameSelector # type: ignore
     else:
         raise ImportError("Torch not loaded")
+    
+    # Import the Agentic Router
+    from src.agent.dispatcher import DispatcherAgent #type:ignore
 except ImportError as e:
     print(f"Error importing model modules: {e}")
     print("Ensure 'deepfake_model' repo is cloned and dependencies are installed.")
@@ -43,6 +46,9 @@ class DeepFakeDetector:
             self.device = 'cpu' # Fallback
         self.model = None
         self.load_model()
+        
+        # Initialize the Intelligent Switchboard (Dispatcher)
+        self.dispatcher = DispatcherAgent()
 
     def load_model(self):
         if not torch:
@@ -67,61 +73,97 @@ class DeepFakeDetector:
 
     def check_media(self, filepath, progress_callback=None):
         """
-        Main entry point.
+        Main entry point using Agentic Routing (Intelligent Switchboard).
         Returns: (is_fake: bool, score: float, patch_scores: list, meta: dict)
         """
+        if progress_callback: progress_callback("Agentic Router Analyzing Input...")
+        
+        # Dispatch the request to the Intelligence Switchboard
+        routing_info = self.dispatcher.dispatch(filepath)
+        route = routing_info.get("route", "REJECT")
+        reason = routing_info.get("reason", "Unknown routing decision.")
+        
+        if progress_callback: progress_callback(f"Router Decision: {route} ({reason[:50]}...)")
+        print(f"[Agentic Router] Decision: {route} | Reason: {reason}")
+
         # MOCK MODE check
-        if self.model is None:
+        if self.model is None and route != "REJECT":
             if progress_callback: progress_callback("Model not loaded. Running Mock Analysis...")
             print("Running in MOCK mode due to missing weights/model.")
-            # Mock logic: if filename has 'fake', it's fake.
             score = 0.95 if 'fake' in os.path.basename(filepath).lower() else 0.05
-            # Mock patch scores (3x3 = 9 values)
             import random
             mock_patches = [score + random.uniform(-0.1, 0.1) for _ in range(9)]
             mock_patches = [max(0.0, min(1.0, p)) for p in mock_patches] # Clip
-            return score > 0.5, score, mock_patches, {'type': 'mock', 'info': 'Mock Analysis'}
+            return score > 0.5, score, mock_patches, {'type': 'mock', 'info': 'Mock Analysis', 'agent_reason': reason}
 
-        ext = os.path.splitext(filepath)[1].lower()
-        if ext in ['.jpg', '.jpeg', '.png', '.bmp']:
-            if progress_callback: progress_callback("Analyzing image...")
-            return self._check_image(filepath)
-        elif ext in ['.mp4', '.avi', '.mov', '.mkv']:
+        if route == "REJECT":
+            return False, 0.0, [], {'status': 'rejected', 'reason': reason, 'type': 'agent_reject'}
+        
+        elif route == "FACE_PIPELINE":
+            if progress_callback: progress_callback("Processing Face Forensics...")
+            return self._check_image(filepath, progress_callback)
+            
+        elif route == "VIDEO_PIPELINE":
             return self._check_video(filepath, progress_callback)
+            
+        elif route == "TEXT_TAMPER":
+            if progress_callback: progress_callback("Processing Textual Image Analysis...")
+            # Placeholder for TextTamper pipeline
+            return False, 0.5, [], {'type': 'text_tamper', 'info': 'TextTamper pipeline logic pending'}
+            
         else:
-            print(f"Unsupported file type: {ext}")
-            return False, 0.0, [], {'error': f"Unsupported file type: {ext}"}
+            print(f"Unknown route requested by Agent: {route}")
+            return False, 0.0, [], {'error': f"Unknown route: {route}"}
 
-    def _check_image(self, image_path):
+    def _check_image(self, image_path, progress_callback=None):
         try:
             img = cv2.imread(image_path)
             if img is None:
                 raise ValueError(f"Could not read image {image_path}")
             
-            # Preprocess as per inference.py
-            img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            img_resized = cv2.resize(img_rgb, (1024, 1024))
-            img_tensor = torch.from_numpy(img_resized).permute(2, 0, 1).float() / 255.0
-            img_tensor = img_tensor.unsqueeze(0).to(self.device) # (1, 3, 1024, 1024)
-
-            with torch.no_grad():
-                global_logit, patch_logits = self._run_inference_with_timing(img_tensor)
-                prob = torch.sigmoid(global_logit).item()
-
-                # global_logit, patch_logits = self.model(img_tensor)
+            # --- AGENTIC REFLECTION (Feedback Loop) ---
+            # We wrap the core inference to allow for reflection if confidence is low.
+            
+            def perform_inference(image_data):
+                img_rgb = cv2.cvtColor(image_data, cv2.COLOR_BGR2RGB)
+                img_resized = cv2.resize(img_rgb, (1024, 1024))
+                img_tensor = torch.from_numpy(img_resized).permute(2, 0, 1).float() / 255.0
+                img_tensor = img_tensor.unsqueeze(0).to(self.device) 
                 
-                # # Combine global and patch logits
-                # # patch_logits shape: (1, 9) usually
-                # all_logits = torch.cat([global_logit.view(-1), patch_logits.view(-1)])
-                # all_probs = torch.sigmoid(all_logits)
-                
-                # # Top-K Average Consensus (K=5)
-                # k = 5
-                # top_k_probs, _ = torch.topk(all_probs, min(k, len(all_probs)))
-                # prob = torch.mean(top_k_probs).item()
+                with torch.no_grad():
+                    global_logit, patch_logits = self._run_inference_with_timing(img_tensor)
+                    prob = torch.sigmoid(global_logit).item()
+                    patch_probs = torch.sigmoid(patch_logits).squeeze().cpu().numpy().tolist()
+                return prob, patch_probs
 
-                patch_probs = torch.sigmoid(patch_logits).squeeze().cpu().numpy().tolist()
-            return prob > 0.5, prob, patch_probs, {'type': 'image'}
+            prob, patch_probs = perform_inference(img)
+            
+            # Reflection Check: Low confidence (near 0.5)
+            # If the score is between 0.4 and 0.6, the model is uncertain.
+            if 0.4 < prob < 0.6:
+                if progress_callback: progress_callback("Low Confidence Detected. Agent Reflecting...")
+                print(f"[Reflection] Uncertain score {prob:.4f}. Attempting recovery via multi-scale analysis...")
+                
+                # RECOVERY ACTION: Try a centered crop or slight rotation 
+                # This is a sample 'reflection' strategy.
+                h, w = img.shape[:2]
+                side = min(h, w)
+                center_crop = img[(h-side)//2 : (h+side)//2, (w-side)//2 : (w+side)//2]
+                
+                new_prob, new_patch_probs = perform_inference(center_crop)
+                print(f"[Reflection] Second pass score: {new_prob:.4f}")
+                
+                # If the second pass is more decisive (further from 0.5), we prefer it.
+                if abs(new_prob - 0.5) > abs(prob - 0.5):
+                    print("[Reflection] Adopting more confident second-pass score.")
+                    prob, patch_probs = new_prob, new_patch_probs
+                    reflection_status = "Reflected-Adopted"
+                else:
+                    reflection_status = "Reflected-Stayed"
+            else:
+                reflection_status = "Original"
+
+            return prob > 0.5, prob, patch_probs, {'type': 'image', 'reflection': reflection_status}
         except Exception as e:
             print(f"Image inference error: {e}")
             return False, 0.0, [], {'error': str(e)}
@@ -220,15 +262,15 @@ class DeepFakeDetector:
             
             if not scores:
                 print("No valid frames extracted from video.")
-                return False, 0.0, [], {'frames_processed': 0, 'frames_sampled': frames_sampled, 'type': 'video', 'error': 'No valid frames extracted (No face/Too blurry)'}, {}
+                return False, 0.0, [], {'frames_processed': 0, 'frames_sampled': frames_sampled, 'type': 'video', 'error': 'No valid frames extracted (No face/Too blurry)'}
             
             avg_score = np.mean(scores)
             print(f"Video Score: {avg_score:.4f} (Frames: {len(scores)}/{frames_sampled})")
-            return avg_score > 0.5, avg_score, [], {'frames_processed': len(scores), 'frames_sampled': frames_sampled, 'type': 'video'}, {}
+            return avg_score > 0.5, avg_score, [], {'frames_processed': len(scores), 'frames_sampled': frames_sampled, 'type': 'video'}
 
         except Exception as e:
             print(f"Video inference error: {e}")
-            return False, 0.0, [], {'frames_processed': 0, 'frames_sampled': 0, 'type': 'video', 'error': str(e)}, {'error': str(e)}
+            return False, 0.0, [], {'frames_processed': 0, 'frames_sampled': 0, 'type': 'video', 'error': str(e)}
 
     def _run_inference_with_timing(self, img_tensor):
         """

@@ -129,6 +129,25 @@ def upload_file_api():
                 'score': score,
                 'patch_scores': patch_scores
             }, 200
+            
+        elif meta.get('status') == 'rejected':
+            # AGENT REJECTION (e.g., Too Blurry)
+            reason = meta.get('reason', 'Agent rejected the input')
+            print(f"REJECTED BY AGENT: {reason}")
+            logging.info(f"AGENT REJECT: {reason} | File: {filename}")
+            
+            if socket_id:
+                socketio.emit('agent_reject', {
+                    'username': username,
+                    'filename': filename,
+                    'reason': reason
+                }, to=socket_id)
+                
+            return {
+                'status': 'rejected',
+                'reason': reason
+            }, 200
+            
         else:
             print(f"BROADCAST: {log_msg}")
             logging.info(f"BROADCASTING: {log_msg}")
