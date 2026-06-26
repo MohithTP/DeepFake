@@ -7,10 +7,10 @@ Advanced Deepfake Detection Framework
 
 ## 📚 Table of Contents
 1.  **[The Concept](#-stage-1-the-concept)** - Why this exists and how it works.
-2.  **[Architecture](#-stage-2-architecture)** - The engine under the hood.
+2.  **[System Architecture](#-stage-2-system-architecture)** - The complete pipeline (Router, Engine, Web App).
 3.  **[Installation](#-stage-3-installation)** - Setting up your environment.
 4.  **[Training Strategy](#-stage-4-training-recommended)** - How to train on Kaggle (Free).
-5.  **[Inference & Usage](#-stage-5-inference--usage)** - Running the model on videos/images.
+5.  **[Inference & Web Usage](#-stage-5-inference--web-usage)** - Running the web app and local scripts.
 6.  **[Datasets](#-datasets)** - What data we use.
 
 ---
@@ -27,20 +27,28 @@ This model takes a different approach. It assumes that while a deepfake might *l
 
 ---
 
-## 🏗️ Stage 2: Architecture
+## 🏗️ Stage 2: System Architecture
 
-We don't just look at the whole face. We break it down.
+The project consists of three main components working together to process media from upload to final verdict:
 
-### 1. Patch Extraction
-The face is cropped and split into **9 Overlapping Patches**. This forces the model to look at local details (texture of skin, edge of glasses, hair blending) rather than just the global structure.
+### 1. The Intelligent Switchboard (Agentic Router)
+Before media reaches the heavy neural networks, it passes through an **Agentic Router** (built with `agno`). 
+- Extracts metadata and uses computer vision tools to evaluate image quality (e.g., blurriness) and check for adversarial noise.
+- Triages the input and optimally routes it (e.g., `VIDEO_PIPELINE`, `FACE_PIPELINE`, `TEXT_TAMPER`, or `REJECT`) to save computational resources.
 
-### 2. Dual-Stream Network
-Each patch goes through two parallel networks:
-*   **Xception (RGB)**: Extracts visual features.
-*   **ResNet50 (DCT)**: Extracts frequency artifacts.
+### 2. The Model Handler Pipeline
+When media is routed for deepfake analysis, the backend pipeline takes over:
+- **Deduplication (dHash):** Skips duplicate frames in videos to optimize speed.
+- **Face Extraction (MTCNN):** Isolates the face from the frame.
 
-### 3. Ensemble Decision
-The system aggregates the scores from all 9 patches. If even **one** patch is highly suspicious (e.g., a glitch in the ear rendering), the whole video can be flagged.
+### 3. The Core AI Engine (DSMPE-Net)
+The extracted face is passed to the **Dual-Stream Multi-Patch Ensemble Network**:
+- **Patch Extraction:** The face is split into **9 Overlapping Patches** to scrutinize microscopic local details.
+- **Dual-Stream Network:** Each patch is analyzed simultaneously by **Xception** (RGB/Visual artifacts) and **ResNet50** (DCT/Frequency anomalies).
+- **Ensemble Decision:** Scores from all 9 patches and both streams are aggregated. If even one patch exhibits highly suspicious signals, the media is flagged.
+
+### 4. The Web Application
+A frontend built with **Flask** and **Flask-SocketIO** provides a user-friendly interface. It allows users to upload suspect media and utilizes WebSockets to stream real-time progression updates back to the browser as the Router and AI Engine process the file.
 
 ---
 
@@ -83,11 +91,18 @@ If the notebook disconnects, simply download the last `.pth` file, upload it to 
 
 ---
 
-## 🎬 Stage 5: Inference & Usage
+## 🎬 Stage 5: Inference & Web Usage
 
-Once you have your trained model (`dsmpe_net_final.pth`), you can run it on your local machine.
+Once you have your trained model (`dsmpe_net_final.pth`), you can run the system.
 
-### 1. Analyzing a Video (Best for Demo)
+### 1. Running the Web Application (Recommended)
+Launch the Flask web application to interact with the full Agentic Router and Deepfake Detection pipeline via a web UI.
+```bash
+python app.py
+```
+*Navigate to `http://localhost:5000` in your browser. Real-time processing logs will be streamed via WebSockets as your media is analyzed.*
+
+### 2. Analyzing a Video via CLI
 This pipeline splits the video into frames, detects faces, runs the model, and gives a final Real/Fake score.
 
 ```bash
@@ -98,7 +113,7 @@ python -m src.video.parallel_processor \
 ```
 *   **Output:** It will print the score and save a `debug_patches.png` showing what it saw.
 
-### 2. Analyzing a Single Image
+### 3. Analyzing a Single Image via CLI
 ```bash
 python inference.py \
   --image_path "path/to/image.jpg" \
