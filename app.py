@@ -25,14 +25,18 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 # Initialize DeepFake Detector (Global for now)
 # Expects weights file in root as per plan
-MODEL_WEIGHTS = 'dsmpe_net_epoch_4.pth' # User must provide this
+MODEL_WEIGHTS = 'dsmpe_net_final.pth' # User must provide this
+TEXT_TAMPER_WEIGHTS = 'xception_ela_doctamper_latest.pth' # Text Tamper Weights
 detector = None
 
 def get_detector():
     global detector
     if detector is None:
         try:
-            detector = DeepFakeDetector(weights_path=MODEL_WEIGHTS)
+            detector = DeepFakeDetector(
+                weights_path=MODEL_WEIGHTS,
+                text_tamper_weights_path=TEXT_TAMPER_WEIGHTS
+            )
             print("Model loaded successfully.")
         except Exception as e:
             print(f"Error loading model: {e}")

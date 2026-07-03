@@ -1,133 +1,141 @@
-Advanced Deepfake Detection Framework
+# 🕵️‍♂️ Advanced Deepfake & Tamper Detection Framework
 
-> **Dual-Stream Multi-Patch Ensemble Network (DSMPE-Net)**
-> A robust forensic tool designed to detect generated media by analyzing both visual artifacts and frequency/spectral anomalies.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=flat&logo=PyTorch&logoColor=white)](https://pytorch.org/)
+[![Flask](https://img.shields.io/badge/flask-%23000.svg?style=flat&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 
----
-
-## 📚 Table of Contents
-1.  **[The Concept](#-stage-1-the-concept)** - Why this exists and how it works.
-2.  **[System Architecture](#-stage-2-system-architecture)** - The complete pipeline (Router, Engine, Web App).
-3.  **[Installation](#-stage-3-installation)** - Setting up your environment.
-4.  **[Training Strategy](#-stage-4-training-recommended)** - How to train on Kaggle (Free).
-5.  **[Inference & Web Usage](#-stage-5-inference--web-usage)** - Running the web app and local scripts.
-6.  **[Datasets](#-datasets)** - What data we use.
+A comprehensive, state-of-the-art forensic framework designed to detect AI-generated faces (deepfakes) and text document tampering. It combines an Intelligent Agentic Switchboard for dynamic routing with robust deep neural networks analyzing both visual and frequency-domain anomalies.
 
 ---
 
-## 🧠 Stage 1: The Concept
-
-Deepfakes are becoming perfect. Traditional detectors that look for "blurry faces" or "weird eyes" are failing because modern GANs (Generative Adversarial Networks) are too good.
-
-This model takes a different approach. It assumes that while a deepfake might *look* perfect, the mathematical process of generating it leaves behind invisible "fingerprints" in the **Frequency Domain** (DCT coefficients).
-
-*   **Spatial Stream:** Looks at the image like a human (RGB pixels).
-*   **Frequency Stream:** Looks at the image like a signal engineer (DCT transform).
-*   **The Verdict:** If *either* stream detects an anomaly, the image is flagged.
-
----
-
-## 🏗️ Stage 2: System Architecture
-
-The project consists of three main components working together to process media from upload to final verdict:
-
-### 1. The Intelligent Switchboard (Agentic Router)
-Before media reaches the heavy neural networks, it passes through an **Agentic Router** (built with `agno`). 
-- Extracts metadata and uses computer vision tools to evaluate image quality (e.g., blurriness) and check for adversarial noise.
-- Triages the input and optimally routes it (e.g., `VIDEO_PIPELINE`, `FACE_PIPELINE`, `TEXT_TAMPER`, or `REJECT`) to save computational resources.
-
-### 2. The Model Handler Pipeline
-When media is routed for deepfake analysis, the backend pipeline takes over:
-- **Deduplication (dHash):** Skips duplicate frames in videos to optimize speed.
-- **Face Extraction (MTCNN):** Isolates the face from the frame.
-
-### 3. The Core AI Engine (DSMPE-Net)
-The extracted face is passed to the **Dual-Stream Multi-Patch Ensemble Network**:
-- **Patch Extraction:** The face is split into **9 Overlapping Patches** to scrutinize microscopic local details.
-- **Dual-Stream Network:** Each patch is analyzed simultaneously by **Xception** (RGB/Visual artifacts) and **ResNet50** (DCT/Frequency anomalies).
-- **Ensemble Decision:** Scores from all 9 patches and both streams are aggregated. If even one patch exhibits highly suspicious signals, the media is flagged.
-
-### 4. The Web Application
-A frontend built with **Flask** and **Flask-SocketIO** provides a user-friendly interface. It allows users to upload suspect media and utilizes WebSockets to stream real-time progression updates back to the browser as the Router and AI Engine process the file.
+## 📖 Table of Contents
+1. [Overview & Concept](#-overview--concept)
+2. [Key Features](#-key-features)
+3. [System Architecture](#-system-architecture)
+4. [Installation & Prerequisites](#-installation--prerequisites)
+5. [Usage & Inference](#-usage--inference)
+6. [Training Strategy](#-training-strategy)
+7. [Datasets](#-datasets)
+8. [License](#-license)
 
 ---
 
-## 🛠️ Stage 3: Installation
+## 🧠 Overview & Concept
+
+As Generative AI models (like GANs and Diffusion models) reach photorealism, traditional detectors looking for visual blurriness are failing. 
+
+This framework takes a multi-modal approach:
+1. **Facial Deepfakes:** Assumes that generating deepfakes leaves behind invisible mathematical "fingerprints". We analyze images not just as RGB pixels, but as frequency signals using Discrete Cosine Transform (DCT) coefficients.
+2. **Text Document Tampering:** Utilizes Error Level Analysis (ELA) to highlight compression artifacts introduced when text is digitally pasted or manipulated on a document.
+
+---
+
+## ✨ Key Features
+
+* **Intelligent Routing:** An Agentic AI switchboard (powered by `agno`) analyzes incoming media and routes it to the optimal processing pipeline, saving computational power.
+* **Dual-Stream Facial Analysis (DSMPE-Net):** Analyzes both Spatial (Xception) and Frequency (ResNet50) domains simultaneously.
+* **Multi-Patch Extraction:** Splits faces into 9 overlapping patches to force the model to scrutinize microscopic, local details rather than holistic structures.
+* **Text Tampering Detection:** A specialized Xception-based module focusing on ELA maps to catch forged documents.
+* **Real-time Web UI:** A Flask and SocketIO powered frontend that provides users with live streaming logs of the backend forensic process.
+
+---
+
+## 🏗️ System Architecture
+
+The pipeline consists of four major interconnected components:
+
+### 1. The Agentic Router (Intelligent Switchboard)
+Before media touches the heavy neural networks, it is triaged by a smart dispatcher:
+- Evaluates metadata and uses basic CV tools to check image quality (blurriness) and scan for adversarial noise.
+- Analyzes text density to identify if the image is a document.
+- Routes the input optimally (e.g., `VIDEO_PIPELINE`, `FACE_PIPELINE`, `TEXT_TAMPER`, or `REJECT`).
+
+### 2. The Facial Deepfake Engine (DSMPE-Net)
+When a face or video is detected:
+- **Deduplication & Extraction:** Uses dHash to skip identical video frames and MTCNN to accurately extract facial bounding boxes.
+- **Dual-Stream Processing:** Each face is split into 9 patches. Every patch runs through an **Xception network** (for RGB visual artifacts) and a **ResNet50 network** (for DCT frequency anomalies).
+- **Ensemble Verdict:** The network aggregates scores across all patches and streams. A single highly suspicious patch flags the entire media.
+
+### 3. The Text Tamper Engine
+When a document is detected (`TEXT_TAMPER` route):
+- **Error Level Analysis (ELA):** The document undergoes ELA preprocessing to expose compression disparities.
+- **Forensic Xception:** The ELA tensor is passed through a binary classification Xception network tailored to spot text manipulation.
+
+### 4. The Web Controller
+A **Flask / Flask-SocketIO** backend acts as the orchestrator, accepting uploads and pushing asynchronous, real-time forensic progress updates to the web interface.
+
+---
+
+## 🛠️ Installation & Prerequisites
 
 ### Prerequisites
-*   Python 3.10+
-*   NVIDIA GPU (Recommended for Inference)
+*   Python 3.10 or higher
+*   NVIDIA GPU with CUDA support (Highly Recommended for inference speed)
+*   Required Weights Files:
+    *   `dsmpe_net_final.pth` (Main Deepfake Model)
+    *   `xception_ela_doctamper_latest.pth` (Text Tamper Model)
 
 ### Quick Start
 ```bash
-# 1. Clone the Repo
+# 1. Clone the Repository
 git clone https://github.com/MohithTP/DeepFake.git
 cd DeepFake
 
 # 2. Install Dependencies
-# We recommend using 'uv' for speed, or partial installs.
 pip install -r requirements.txt
+
+# 3. Add Model Weights
+# Ensure your .pth files are placed in the root directory.
 ```
 
 ---
 
-## 🚂 Stage 4: Training (Recommended)
+## 🎬 Usage & Inference
 
-Since training Deep Learning models requires massive GPU power, we have optimized this project for **Kaggle Notebooks (Free Tesla T4 GPUs)**.
-
-
-**How to Train:**
-1.  **Open Kaggle:** Create a new Notebook.
-2.  **Add Dataset:** Search for and add the `wild-deepfake` dataset.
-3.  **Use the Script:** found in `kaggle_script.py`.
-4.  **Run:** It will automatically:
-    *   Clone this repo.
-    *   Install dependencies.
-    *   Train for 10 Epochs.
-    *   Save `dsmpe_net_epoch_X.pth` after every epoch.
-
-**Resume Training:**
-If the notebook disconnects, simply download the last `.pth` file, upload it to a new notebook, and update the `resume_path` variable in the script.
-
----
-
-## 🎬 Stage 5: Inference & Web Usage
-
-Once you have your trained model (`dsmpe_net_final.pth`), you can run the system.
-
-### 1. Running the Web Application (Recommended)
-Launch the Flask web application to interact with the full Agentic Router and Deepfake Detection pipeline via a web UI.
+### 1. Launching the Web Interface (Recommended)
+The easiest way to interact with the full Agentic Router and detection pipelines.
 ```bash
 python app.py
 ```
-*Navigate to `http://localhost:5000` in your browser. Real-time processing logs will be streamed via WebSockets as your media is analyzed.*
+*Navigate to `http://localhost:5000` in your web browser. Upload an image or video and watch the real-time processing logs stream via WebSockets.*
 
-### 2. Analyzing a Video via CLI
-This pipeline splits the video into frames, detects faces, runs the model, and gives a final Real/Fake score.
-
+### 2. CLI: Analyzing a Video
+Splits a video into frames, detects faces, runs the model, and outputs a final score.
 ```bash
 python -m src.video.parallel_processor \
   --video "path/to/suspect_video.mp4" \
   --model "dsmpe_net_final.pth" \
   --visualize
 ```
-*   **Output:** It will print the score and save a `debug_patches.png` showing what it saw.
 
-### 3. Analyzing a Single Image via CLI
+### 3. CLI: Analyzing a Single Image
 ```bash
 python inference.py \
-  --image_path "path/to/image.jpg" \
+  --image_path "path/to/face_image.jpg" \
   --weight_path "dsmpe_net_final.pth"
 ```
 
 ---
 
+## 🚂 Training Strategy
+
+Due to the heavy computational requirements of deep learning, we recommend training on **Kaggle Notebooks (Free Tesla T4 GPUs)**.
+
+1. **Setup:** Create a new Kaggle Notebook and attach the `wild-deepfake` dataset.
+2. **Execute Script:** Run the provided `kaggle_script.py` within the notebook.
+3. **Automated Pipeline:** The script will automatically clone this repository, install dependencies, and train for 10 epochs, saving checkpoints (`dsmpe_net_epoch_X.pth`) iteratively.
+4. **Resuming:** If the kernel disconnects, download the latest checkpoint, re-upload it, and update the `resume_path` variable to continue training.
+
+---
+
 ## 📂 Datasets
 
-*   **WildDeepfake:** Used for Training. Contains distinct real-world deepfakes from the internet.
-*   **Celeb-DF v2:** Used for Testing. High-quality deepfakes that are hard to detect.
+*   **WildDeepfake:** Used for Training. Contains distinct real-world deepfakes sourced from the internet.
+*   **Celeb-DF v2:** Used for Testing/Validation. High-quality deepfakes that challenge traditional detectors.
+*   **DocTamperV1:** (SCD/FCD) Used for training the Error Level Analysis text tampering model.
 
 ---
 
 ## 📜 License
-MIT License. Free to use for research and educational purposes.
+This project is licensed under the **MIT License**. It is free to use, modify, and distribute for research and educational purposes. See the `LICENSE` file for more details.

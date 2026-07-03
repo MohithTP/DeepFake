@@ -32,19 +32,24 @@ try:
         raise ImportError("Torch not loaded")
     
     # Import the Agentic Router
-    from src.agent.dispatcher import DispatcherAgent #type:ignore
+    from src.agent.dispatcher import DispatcherAgent # type: ignore
+    
+    # Import Text Tamper Model
+    from src.models.text_tamper import TextTamperDetector
 except ImportError as e:
     print(f"Error importing model modules: {e}")
     print("Ensure 'deepfake_model' repo is cloned and dependencies are installed.")
 
 class DeepFakeDetector:
-    def __init__(self, weights_path):
+    def __init__(self, weights_path, text_tamper_weights_path='xception_ela_doctamper_latest.pth'):
         self.weights_path = weights_path
+        self.text_tamper_weights_path = text_tamper_weights_path
         if torch:
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         else:
             self.device = 'cpu' # Fallback
         self.model = None
+        self.text_tamper_detector = None
         self.load_model()
         
         # Initialize the Intelligent Switchboard (Dispatcher)
@@ -70,6 +75,13 @@ class DeepFakeDetector:
         except Exception as e:
             print(f"Failed to load model: {e}")
             self.model = None
+            
+        # Initialize Text Tamper Detector
+        try:
+            self.text_tamper_detector = TextTamperDetector(weights_path=self.text_tamper_weights_path, device=self.device)
+        except Exception as e:
+            print(f"Failed to initialize Text Tamper Detector: {e}")
+            self.text_tamper_detector = None
 
     def check_media(self, filepath, progress_callback=None):
         """
@@ -108,8 +120,11 @@ class DeepFakeDetector:
             
         elif route == "TEXT_TAMPER":
             if progress_callback: progress_callback("Processing Textual Image Analysis...")
-            # Placeholder for TextTamper pipeline
-            return False, 0.5, [], {'type': 'text_tamper', 'info': 'TextTamper pipeline logic pending'}
+            if self.text_tamper_detector:
+                is_fake, prob = self.text_tamper_detector.predict(filepath)
+                return is_fake, prob, [], {'type': 'text_tamper', 'info': 'Processed by TextTamper model'}
+            else:
+                return False, 0.0, [], {'type': 'text_tamper', 'error': 'TextTamper detector not initialized'}
             
         else:
             print(f"Unknown route requested by Agent: {route}")
