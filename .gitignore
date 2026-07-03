@@ -49,18 +49,9 @@ results/
 Thumbs.db
 
 uv.lock
-welfake_clean.csv
-WELFake_Dataset.csv
 create_kaggle_bundle.py
-generate_graphs.py
-visualize_pipeline_steps.py
-archive1
-archive1/cc.en.300.bin
+dsmpe_net_final/
 
-
-LSTM.py
-SVM.py
-Train_SVM.py
 
 deepfake_model\data
 *.png
